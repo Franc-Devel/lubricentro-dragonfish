@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Login Dragonfish</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body
+    class="bg-dark d-flex align-items-center justify-content-center"
+    style="height: 100vh"
+  >
+    <div class="card bg-secondary text-white p-4" style="width: 360px">
+      <h4 class="text-center text-info text-uppercase fw-bold mb-3">
+        Dragonfish LC
+      </h4>
+      <form id="form-login">
+        <div class="mb-3">
+          <label class="small text-muted fw-bold">OPERADOR</label
+          ><input
+            type="email"
+            id="email"
+            class="form-control bg-dark text-white border-0"
+            required
+            placeholder="admin@lubricenter.com"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="small text-muted fw-bold">CLAVE MÓDULO</label
+          ><input
+            type="password"
+            id="password"
+            class="form-control bg-dark text-white border-0"
+            required
+            placeholder="******"
+          />
+        </div>
+        <div
+          id="alerta"
+          class="alert alert-danger d-none p-2 small text-center"
+        ></div>
+        <button type="submit" class="btn btn-info w-100 text-dark fw-bold">
+          INGRESAR
+        </button>
+      </form>
+    </div>
+    <script src="js/login.js"></script>
+  </body>
+</html>

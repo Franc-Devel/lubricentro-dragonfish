@@ -1,0 +1,11 @@
+:root { --bg-dark: #0a0a0c; --bg-secondary: #121216; --text-info: #00e5ff; --border-color: #22222a; }
+body { background-color: var(--bg-dark) !important; font-family: 'Consolas', monospace !important; }
+.bg-dark { background-color: var(--bg-dark) !important; }
+.bg-secondary { background-color: var(--bg-secondary) !important; }
+.text-info { color: var(--text-info) !important; }
+.border-secondary { border-color: var(--border-color) !important; }
+.bg-black { background-color: #000000 !important; }
+.btn-info { background-color: var(--text-info); border: none; }
+.nav-pills .nav-link { color: #aaaaaa; }
+.nav-pills .nav-link.active { background-color: var(--bg-dark) !important; color: var(--text-info) !important; border: 1px solid var(--border-color); }
+.form-control, .form-select { border: 1px solid var(--border-color) !important; }
