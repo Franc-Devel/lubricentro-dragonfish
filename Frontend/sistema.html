@@ -106,7 +106,7 @@
                     <tr>
                       <th>Cod.</th>
                       <th>Detalle</th>
-                      <th class="text-center">Cant</th>
+                      <th class="text-center" style="width: 90px">Cant</th>
                       <th class="text-end">Subtotal</th>
                       <th class="text-center"></th>
                     </tr>
@@ -156,6 +156,12 @@
               >
                 FILTRAR
               </button>
+              <button
+                class="btn btn-success btn-sm text-dark fw-bold px-3"
+                onclick="abrirModalProducto()"
+              >
+                + AGREGAR ARTÍCULO
+              </button>
             </div>
           </div>
           <div class="card bg-secondary p-3 border-0">
@@ -173,6 +179,183 @@
               <tbody id="tabla-productos-body"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="modalCobro"
+      tabindex="-1"
+      aria-labelledby="modalCobroLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div
+          class="modal-content bg-secondary text-white border border-secondary"
+        >
+          <div
+            class="modal-header border-bottom border-dark bg-black py-2 px-3"
+          >
+            <h6 class="modal-title fw-bold text-info" id="modalCobroLabel">
+              📥 RESUMEN DE COBRO DE CAJA
+            </h6>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <p class="text-muted small text-uppercase fw-bold mb-1">
+              Monto Neto a Liquidar
+            </p>
+            <h1
+              class="display-5 fw-bold text-success mb-2"
+              id="modal-total-monto"
+            >
+              $0.00
+            </h1>
+            <p class="small text-white-50 m-0">
+              Asegure el cobro en efectivo o posnet antes de confirmar.
+            </p>
+          </div>
+          <div
+            class="modal-footer border-top border-dark bg-black py-2 px-3 d-flex justify-content-between"
+          >
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm text-white px-3"
+              data-bs-dismiss="modal"
+            >
+              CANCELAR
+            </button>
+            <button
+              type="button"
+              id="btn-confirmar-pago"
+              class="btn btn-success btn-sm text-dark fw-bold px-4"
+            >
+              CONFIRMAR COBRO
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="modalProducto"
+      tabindex="-1"
+      aria-labelledby="modalProductoTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div
+          class="modal-content bg-secondary text-white border border-secondary"
+        >
+          <div
+            class="modal-header border-bottom border-dark bg-black py-2 px-3"
+          >
+            <h6 class="modal-title fw-bold text-info" id="modalProductoTitle">
+              📝 REGISTRO DE ARTÍCULO
+            </h6>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <form id="form-producto">
+            <input type="hidden" id="prod-id" />
+            <div class="modal-body py-3">
+              <div class="row g-2">
+                <div class="col-md-4 mb-2">
+                  <label class="small text-muted fw-bold">CÓDIGO</label>
+                  <input
+                    type="text"
+                    id="prod-codigo"
+                    class="form-control bg-dark text-white border-0 form-control-sm text-center text-info fw-bold"
+                    placeholder="Ej: 021"
+                    required
+                  />
+                </div>
+                <div class="col-md-8 mb-2">
+                  <label class="small text-muted fw-bold">CATEGORÍA</label>
+                  <select
+                    id="prod-categoria"
+                    class="form-select bg-dark text-white border-0 form-control-sm text-uppercase"
+                    required
+                  >
+                    <option value="1">Aceites y Lubricantes</option>
+                    <option value="2">Filtros de Motor</option>
+                    <option value="3">Aditivos y Fluidos</option>
+                  </select>
+                </div>
+                <div class="col-12 mb-2">
+                  <label class="small text-muted fw-bold"
+                    >DESCRIPCIÓN / NOMBRE</label
+                  >
+                  <input
+                    type="text"
+                    id="prod-nombre"
+                    class="form-control bg-dark text-white border-0 form-control-sm text-uppercase"
+                    placeholder="ACEITE BARDAHL..."
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mb-2">
+                  <label class="small text-muted fw-bold">MEDIDA</label>
+                  <input
+                    type="text"
+                    id="prod-presentacion"
+                    class="form-control bg-dark text-white border-0 form-control-sm"
+                    placeholder="Bidon 4L / Unidad"
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mb-2">
+                  <label class="small text-muted fw-bold">PRECIO ($)</label>
+                  <input
+                    type="number"
+                    id="prod-precio"
+                    step="0.01"
+                    class="form-control bg-dark text-white border-0 form-control-sm text-end"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mb-2">
+                  <label class="small text-muted fw-bold">STOCK</label>
+                  <input
+                    type="number"
+                    id="prod-stock"
+                    class="form-control bg-dark text-white border-0 form-control-sm text-center fw-bold"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="modal-footer border-top border-dark bg-black py-2 px-3 d-flex justify-content-between"
+            >
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm text-white px-3"
+                data-bs-dismiss="modal"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="submit"
+                class="btn btn-info btn-sm text-dark fw-bold px-4"
+              >
+                GUARDAR CAMBIOS
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

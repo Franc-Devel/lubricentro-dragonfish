@@ -2,7 +2,6 @@ let dbProductos = [];
 let ticket = [];
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Verificación de sesión de operador
   if (!localStorage.getItem("token"))
     return (window.location.href = "login.html");
 
@@ -15,50 +14,74 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "login.html";
   });
 
-  // Carga inicial mapeando la base de datos completa
   inicializarVentas();
 
   document
     .getElementById("form-add-venta")
     .addEventListener("submit", alAgregar);
-
-  document.getElementById("btn-finalizar").addEventListener("click", () => {
-    alert("Comprobante emitido correctamente.");
-    ticket = [];
-    renderTicket();
-  });
-
-  // ==========================================================================
-  // BUSCADORES REACTIVOS EN TIEMPO REAL (Filtro instantáneo al escribir)
-  // ==========================================================================
-
-  // TERMINAL VENTAS: Filtra el select al instante a medida que escribís
   document
-    .getElementById("input-filtrar-venta")
-    .addEventListener("input", () => {
-      filtrarSelectVentas();
+    .getElementById("btn-finalizar")
+    .addEventListener("click", mostrarModalCobro);
+
+  document
+    .getElementById("btn-confirmar-pago")
+    .addEventListener("click", () => {
+      const modalElement = document.getElementById("modalCobro");
+      const modal = bootstrap.Modal.getInstance(modalElement);
+      modal.hide();
+      alert("✅ Operación procesada. Comprobante emitido correctamente.");
+      ticket = [];
+      renderTicket();
     });
 
-  // MAESTRO STOCK: Filtra la grilla al instante a medida que escribís
-  document.getElementById("input-buscar-prod").addEventListener("input", () => {
-    cargarProductosMaestro();
+  // Manejo del Submit del Formulario ABM de Productos
+  document
+    .getElementById("form-producto")
+    .addEventListener("submit", guardarProductoBD);
+
+  // CONTROL DE TECLADO PARA EL BUSCADOR RÁPIDO
+  const inputFiltrar = document.getElementById("input-filtrar-venta");
+  inputFiltrar.addEventListener("input", filtrarSelectVentas);
+
+  inputFiltrar.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // ◄ Evita que se agregue el producto de forma automática al presionar Enter
+
+      const select = document.getElementById("venta-producto-select");
+      select.focus(); // ◄ Pone el foco en el selector para interactuar directamente
+
+      // Simula la apertura visual expandiendo temporalmente el tamaño si tiene opciones válidas
+      if (select.options.length > 1) {
+        select.size = select.options.length;
+      }
+    }
   });
+
+  // Devuelve el selector a su estado normal de dropdown cuando pierde el foco o se selecciona un ítem
+  const selectVenta = document.getElementById("venta-producto-select");
+  selectVenta.addEventListener("blur", () => {
+    selectVenta.size = 0;
+  });
+  selectVenta.addEventListener("change", () => {
+    selectVenta.size = 0;
+  });
+
+  document
+    .getElementById("input-buscar-prod")
+    .addEventListener("input", cargarProductosMaestro);
 });
 
-// Carga inicial (trae todo de la DB)
 async function inicializarVentas() {
   try {
     const res = await fetch("http://localhost:3000/api/productos");
     dbProductos = await res.json();
     poblarSelectProductos(dbProductos);
-    // Cargamos también la grilla del maestro inicialmente
     cargarProductosMaestro();
   } catch (err) {
     console.error("Error cargando tabla inicial:", err);
   }
 }
 
-// Inyecta dinámicamente las opciones filtradas en el <select>
 function poblarSelectProductos(lista) {
   const select = document.getElementById("venta-producto-select");
   select.innerHTML = "";
@@ -89,7 +112,6 @@ function poblarSelectProductos(lista) {
   });
 }
 
-// Hace la consulta al Backend y repobla el select de ventas al instante
 async function filtrarSelectVentas() {
   const query = document.getElementById("input-filtrar-venta").value.trim();
   const url = query
@@ -101,22 +123,18 @@ async function filtrarSelectVentas() {
     const productosFiltrados = await res.json();
     poblarSelectProductos(productosFiltrados);
 
-    // Mantenemos actualizado el catálogo en memoria por si eligen un ítem del filtro
     productosFiltrados.forEach((prod) => {
-      if (!dbProductos.some((x) => x.id === prod.id)) {
-        dbProductos.push(prod);
-      }
+      if (!dbProductos.some((x) => x.id === prod.id)) dbProductos.push(prod);
     });
 
     if (productosFiltrados.length > 0) {
       document.getElementById("venta-producto-select").selectedIndex = 1;
     }
   } catch (err) {
-    console.error("Error filtrando caja de ventas:", err);
+    console.error(err);
   }
 }
 
-// Acción de agregar ítem al remito actual
 function alAgregar(e) {
   e.preventDefault();
   const id = parseInt(document.getElementById("venta-producto-select").value);
@@ -125,17 +143,27 @@ function alAgregar(e) {
 
   const p = dbProductos.find((x) => x.id === id);
   if (p) {
-    ticket.push({ code: p.code, name: p.name, cant, sub: p.price * cant });
+    const itemExistente = ticket.find((x) => x.code === p.code);
+    if (itemExistente) {
+      itemExistente.cant += cant;
+      itemExistente.sub = itemExistente.price * itemExistente.cant;
+    } else {
+      ticket.push({
+        code: p.code,
+        name: p.name,
+        price: p.price,
+        cant,
+        sub: p.price * cant,
+      });
+    }
     renderTicket();
-
-    // Limpiamos los filtros y restauramos la lista completa para el siguiente artículo
     document.getElementById("input-filtrar-venta").value = "";
     poblarSelectProductos(dbProductos);
     document.getElementById("form-add-venta").reset();
+    document.getElementById("input-filtrar-venta").focus(); // Mantiene el foco en el buscador para rapidez
   }
 }
 
-// Renderiza la tabla de facturación actual con opción de eliminar ítems del remito
 function renderTicket() {
   const b = document.getElementById("ticket-items");
   b.innerHTML = "";
@@ -159,8 +187,12 @@ function renderTicket() {
       "<td>" +
       i.name.toUpperCase() +
       "</td>" +
-      '<td class="text-center">' +
+      '<td class="text-center" style="width: 90px;">' +
+      '<input type="number" class="form-control bg-dark text-white border-secondary form-control-sm text-center p-0" value="' +
       i.cant +
+      '" min="1" oninput="actualizarCantidad(' +
+      index +
+      ', this.value)" style="height: 25px;" />' +
       "</td>" +
       '<td class="text-end">$' +
       i.sub.toFixed(2) +
@@ -168,7 +200,7 @@ function renderTicket() {
       '<td class="text-center">' +
       '<button type="button" class="p-0" onclick="quitarDelTicket(' +
       index +
-      ')" style="background: none; border: none; cursor: pointer; color: #ff4d4d; font-size: 1rem;" title="Quitar ítem">🗑️</button>' +
+      ')" style="background: none; border: none; cursor: pointer; color: #ff4d4d; font-size: 1rem;">🗑️</button>' +
       "</td>" +
       "</tr>";
   });
@@ -177,13 +209,35 @@ function renderTicket() {
   document.getElementById("btn-finalizar").disabled = false;
 }
 
-// Quita un renglón del remito actual en base a su posición en la lista
-function quitarDelTicket(index) {
-  ticket.splice(index, 1); // Remueve el elemento del array
-  renderTicket(); // Vuelve a dibujar el remito actualizado
+function actualizarCantidad(index, valor) {
+  const nuevaCant = parseInt(valor);
+  if (isNaN(nuevaCant) || nuevaCant < 1) return;
+  ticket[index].cant = nuevaCant;
+  ticket[index].sub = ticket[index].price * nuevaCant;
+  let nuevoTotal = 0;
+  ticket.forEach((i) => (nuevoTotal += i.sub));
+  document.getElementById("ticket-total").innerText =
+    "$" + nuevoTotal.toFixed(2);
+  const fila = document.getElementById("ticket-items").children[index];
+  fila.children[3].innerText = "$" + ticket[index].sub.toFixed(2);
 }
 
-// Filtra el panel maestro de Stock e incluye el botón de baja definitivo
+function quitarDelTicket(index) {
+  ticket.splice(index, 1);
+  renderTicket();
+}
+
+function mostrarModalCobro() {
+  let tot = 0;
+  ticket.forEach((i) => (tot += i.sub));
+  document.getElementById("modal-total-monto").innerText = "$" + tot.toFixed(2);
+  new bootstrap.Modal(document.getElementById("modalCobro")).show();
+}
+
+// ==========================================================================
+// GESTIÓN DEL MAESTRO DE STOCK (ABM INTEGRAL)
+// ==========================================================================
+
 async function cargarProductosMaestro() {
   const query = document.getElementById("input-buscar-prod").value.trim();
   const url = query
@@ -217,15 +271,18 @@ async function cargarProductosMaestro() {
         '<td class="text-end">$' +
         p.price.toFixed(2) +
         "</td>" +
-        '<td class="text-center">' +
+        '<td class="text-center fw-bold">' +
         p.stock +
         "</td>" +
         '<td class="text-center">' +
+        '<button type="button" class="me-2" onclick="prepararEdicion(' +
+        p.id +
+        ')" style="background: none; border: none; color: #00e5ff; cursor: pointer; font-size: 0.95rem;" title="Editar">✏️</button>' +
         '<button type="button" onclick="eliminarProductoBD(' +
         p.id +
         ", '" +
         p.code +
-        '\')" style="background: none; border: none; cursor: pointer; color: #ff4d4d; font-size: 1rem;" title="Eliminar de DB">🗑️</button>' +
+        '\')" style="background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 0.95rem;" title="Eliminar">🗑️</button>' +
         "</td>" +
         "</tr>";
     });
@@ -234,7 +291,98 @@ async function cargarProductosMaestro() {
   }
 }
 
-// Petición física DELETE al Backend para impactar la BD en Aiven
+// Abre el modal vacío para dar de alta un producto nuevo
+function abrirModalProducto() {
+  document.getElementById("form-producto").reset();
+  document.getElementById("prod-id").value = ""; // Limpiamos ID
+
+  // ALTA: El código único SÍ se puede definir
+  const inputCodigo = document.getElementById("prod-codigo");
+  inputCodigo.readOnly = false;
+  inputCodigo.classList.remove("text-muted");
+  inputCodigo.classList.add("text-info");
+
+  document.getElementById("modalProductoTitle").innerText =
+    "📥 REGISTRAR NUEVO ARTÍCULO";
+  new bootstrap.Modal(document.getElementById("modalProducto")).show();
+}
+
+// Busca el producto localmente, rellena el formulario y abre el modal para editar
+function prepararEdicion(id) {
+  const p = dbProductos.find((x) => x.id === id);
+  if (!p) return alert("No se encontraron los datos del producto.");
+
+  document.getElementById("prod-id").value = p.id;
+  document.getElementById("prod-codigo").value = p.code;
+  document.getElementById("prod-nombre").value = p.name;
+  document.getElementById("prod-presentacion").value = p.presentation;
+  document.getElementById("prod-precio").value = p.price;
+  document.getElementById("prod-stock").value = p.stock;
+  document.getElementById("prod-categoria").value = p.categoryId;
+
+  // EDICIÓN: El código único NO se puede modificar (Solo lectura)
+  const inputCodigo = document.getElementById("prod-codigo");
+  inputCodigo.readOnly = true;
+  inputCodigo.classList.remove("text-info");
+  inputCodigo.classList.add("text-muted");
+
+  document.getElementById("modalProductoTitle").innerText =
+    "✏️ MODIFICAR ARTÍCULO: [" + p.code + "]";
+  new bootstrap.Modal(document.getElementById("modalProducto")).show();
+}
+
+// Envía la petición al backend (POST para crear / PUT para actualizar)
+async function guardarProductoBD(e) {
+  e.preventDefault();
+
+  const id = document.getElementById("prod-id").value;
+  const productoData = {
+    code: document.getElementById("prod-codigo").value.trim(),
+    name: document.getElementById("prod-nombre").value.trim(),
+    presentation: document.getElementById("prod-presentacion").value.trim(),
+    price: parseFloat(document.getElementById("prod-precio").value),
+    stock: parseInt(document.getElementById("prod-stock").value),
+    categoryId: parseInt(document.getElementById("prod-categoria").value),
+  };
+
+  const esEdicion = id !== "";
+  const url = esEdicion
+    ? "http://localhost:3000/api/productos/" + id
+    : "http://localhost:3000/api/productos";
+  const metodo = esEdicion ? "PUT" : "POST";
+
+  try {
+    const res = await fetch(url, {
+      method: metodo,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + localStorage.getItem("token"),
+      },
+      body: JSON.stringify(productoData),
+    });
+
+    if (res.ok) {
+      const modalElement = document.getElementById("modalProducto");
+      const modal = bootstrap.Modal.getInstance(modalElement);
+      if (modal) modal.hide();
+
+      alert(
+        esEdicion
+          ? "✅ Artículo actualizado correctamente."
+          : "✅ Nuevo artículo guardado de forma exitosa.",
+      );
+
+      inicializarVentas();
+    } else {
+      const data = await res.json();
+      alert("❌ Error: " + (data.error || "No se pudo procesar la solicitud."));
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error crítico de conexión con el servidor central.");
+  }
+}
+
 async function eliminarProductoBD(id, code) {
   const confirmar = confirm(
     "⚠️ ¿Estás seguro de eliminar el artículo [" +
@@ -246,20 +394,17 @@ async function eliminarProductoBD(id, code) {
   try {
     const res = await fetch("http://localhost:3000/api/productos/" + id, {
       method: "DELETE",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
+      headers: { Authorization: "Bearer " + localStorage.getItem("token") },
     });
 
     if (res.ok) {
       alert("✅ Artículo eliminado de la base de datos.");
-      inicializarVentas(); // Refresca el selector de ventas y la grilla
+      inicializarVentas();
     } else {
       const data = await res.json();
       alert("❌ Error: " + (data.error || "No se pudo eliminar el artículo."));
     }
   } catch (err) {
-    console.error("Error en petición DELETE:", err);
-    alert("❌ Error de comunicación con el servidor central.");
+    console.error(err);
   }
 }
