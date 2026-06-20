@@ -291,19 +291,59 @@ async function cargarProductosMaestro() {
   }
 }
 
-// Abre el modal vacío para dar de alta un producto nuevo
+// Abre el modal y calcula el siguiente código correlativo de forma automática
 function abrirModalProducto() {
   document.getElementById("form-producto").reset();
-  document.getElementById("prod-id").value = ""; // Limpiamos ID
+  document.getElementById("prod-id").value = ""; // Limpiamos ID interno
 
-  // ALTA: El código único SÍ se puede definir
+  // 1. CALCULAR EL SIGUIENTE CÓDIGO SECUENCIAL (Estilo SQL Autoincrement)
+  let siguienteCodigo = "001";
+  if (dbProductos.length > 0) {
+    // Extraemos los códigos, los pasamos a entero y buscamos el valor máximo
+    const codigosNumericos = dbProductos
+      .map((p) => parseInt(p.code, 10))
+      .filter((num) => !isNaN(num));
+
+    if (codigosNumericos.length > 0) {
+      const maxCodigo = Math.max(...codigosNumericos);
+      // Incrementamos y rellenamos con ceros a la izquierda para mantener los 3 dígitos
+      siguienteCodigo = String(maxCodigo + 1).padStart(3, "0");
+    }
+  }
+
+  // 2. CONFIGURAR EL CAMPO COMO ESTRICTAMENTE EN SOLO LECTURA
   const inputCodigo = document.getElementById("prod-codigo");
-  inputCodigo.readOnly = false;
-  inputCodigo.classList.remove("text-muted");
-  inputCodigo.classList.add("text-info");
+  inputCodigo.value = siguienteCodigo;
+  inputCodigo.readOnly = true; // ◄ El usuario no lo puede modificar
+  inputCodigo.classList.remove("text-info");
+  inputCodigo.classList.add("text-muted"); // Estética de campo deshabilitado
 
   document.getElementById("modalProductoTitle").innerText =
     "📥 REGISTRAR NUEVO ARTÍCULO";
+  new bootstrap.Modal(document.getElementById("modalProducto")).show();
+}
+
+// Busca el producto, rellena el formulario y mantiene el código bloqueado
+function prepararEdicion(id) {
+  const p = dbProductos.find((x) => x.id === id);
+  if (!p) return alert("No se encontraron los datos del producto.");
+
+  document.getElementById("prod-id").value = p.id;
+  document.getElementById("prod-codigo").value = p.code;
+  document.getElementById("prod-nombre").value = p.name;
+  document.getElementById("prod-presentacion").value = p.presentation;
+  document.getElementById("prod-precio").value = p.price;
+  document.getElementById("prod-stock").value = p.stock;
+  document.getElementById("prod-categoria").value = p.categoryId;
+
+  // En edición también se mantiene blindado en solo lectura
+  const inputCodigo = document.getElementById("prod-codigo");
+  inputCodigo.readOnly = true;
+  inputCodigo.classList.remove("text-info");
+  inputCodigo.classList.add("text-muted");
+
+  document.getElementById("modalProductoTitle").innerText =
+    "✏️ MODIFICAR ARTÍCULO: [" + p.code + "]";
   new bootstrap.Modal(document.getElementById("modalProducto")).show();
 }
 
