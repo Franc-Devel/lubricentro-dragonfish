@@ -496,3 +496,123 @@ function actualizarKpis(general, efe, tar, tra) {
   document.getElementById("kpi-tarjeta").innerText = `$${tar.toFixed(2)}`;
   document.getElementById("kpi-transferencia").innerText = `$${tra.toFixed(2)}`;
 }
+
+// Genera un balance contable y profesional de cierre de caja en PDF para impresión foliar
+function descargarReportePDF() {
+  const fInicio = document.getElementById("hist-fecha-inicio").value;
+  const fFin = document.getElementById("hist-fecha-fin").value;
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  // Capturamos los montos actuales calculados en las KPI cards reales de la pantalla
+  const txtTotal = document.getElementById("kpi-total-ventas").innerText;
+  const txtEfectivo = document.getElementById("kpi-efectivo").innerText;
+  const txtTarjeta = document.getElementById("kpi-tarjeta").innerText;
+  const txtTransferencia =
+    document.getElementById("kpi-transferencia").innerText;
+
+  // Capturamos las filas de datos del historial
+  const tablaOriginal = document.getElementById(
+    "tabla-historial-body",
+  ).innerHTML;
+
+  // Creamos un contenedor aislado en memoria y le inyectamos estructura corporativa limpia (Fondo Blanco)
+  const contenedorInforme = document.createElement("div");
+  contenedorInforme.style.padding = "20px";
+  contenedorInforme.style.backgroundColor = "#ffffff";
+  contenedorInforme.style.color = "#000000";
+  contenedorInforme.style.fontFamily =
+    "'Segoe UI', Helvetica, Arial, sans-serif";
+
+  contenedorInforme.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333333; padding-bottom: 15px; margin-bottom: 25px;">
+      <div>
+        <h2 style="margin: 0; font-weight: bold; color: #111111; letter-spacing: 0.5px;">LUBRICENTRO DYM</h2>
+        <p style="margin: 3px 0 0 0; font-size: 0.85rem; color: #555555;">Sistema de Gestión de Existencias y Auditoría Central</p>
+        <p style="margin: 1px 0 0 0; font-size: 0.85rem; color: #555555;">Módulo de Control de Caja Diario v1.0</p>
+      </div>
+      <div style="text-align: right;">
+        <h4 style="margin: 0; color: #333333; font-weight: 600;">BALANCE DE ARQUEO DIARIO</h4>
+        <p style="margin: 4px 0 0 0; font-size: 0.85rem; font-weight: bold; color: #111111;">Período: ${fInicio} al ${fFin}</p>
+        <p style="margin: 1px 0 0 0; font-size: 0.8rem; color: #666666;">Fecha de Emisión: ${new Date().toLocaleDateString()}</p>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+      <div style="flex: 1; border: 1px solid #cccccc; padding: 10px; border-top: 4px solid #0dcaf0; border-radius: 4px; text-align: center; background-color: #f8f9fa;">
+        <span style="font-size: 0.75rem; font-weight: bold; color: #555555; text-uppercase;">FACTURACIÓN TOTAL</span>
+        <h3 style="margin: 5px 0 0 0; font-weight: bold; color: #0288d1;">${txtTotal}</h3>
+      </div>
+      <div style="flex: 1; border: 1px solid #cccccc; padding: 10px; border-top: 4px solid #198754; border-radius: 4px; text-align: center; background-color: #f8f9fa;">
+        <span style="font-size: 0.75rem; font-weight: bold; color: #555555; text-uppercase;">EFECTIVO EN CAJA</span>
+        <h3 style="margin: 5px 0 0 0; font-weight: bold; color: #1b5e20;">${txtEfectivo}</h3>
+      </div>
+      <div style="flex: 1; border: 1px solid #cccccc; padding: 10px; border-top: 4px solid #ffc107; border-radius: 4px; text-align: center; background-color: #f8f9fa;">
+        <span style="font-size: 0.75rem; font-weight: bold; color: #555555; text-uppercase;">CUPONES TARJETA</span>
+        <h3 style="margin: 5px 0 0 0; font-weight: bold; color: #e65100;">${txtTarjeta}</h3>
+      </div>
+      <div style="flex: 1; border: 1px solid #cccccc; padding: 10px; border-top: 4px solid #0d6efd; border-radius: 4px; text-align: center; background-color: #f8f9fa;">
+        <span style="font-size: 0.75rem; font-weight: bold; color: #555555; text-uppercase;">MERCADO PAGO / ALIAS</span>
+        <h3 style="margin: 5px 0 0 0; font-weight: bold; color: #0d47a1;">${txtTransferencia}</h3>
+      </div>
+    </div>
+
+    <h5 style="margin: 0 0 10px 0; font-weight: bold; color: #333333; font-size: 0.95rem;">DETALLE DE REMITOS ASENTADOS</h5>
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 40px;">
+      <thead>
+        <tr style="background-color: #111111; color: #ffffff; text-align: left;">
+          <th style="padding: 8px; border: 1px solid #333333;">Fecha / Hora</th>
+          <th style="padding: 8px; border: 1px solid #333333;">Operador</th>
+          <th style="padding: 8px; border: 1px solid #333333;">Medio de Pago</th>
+          <th style="padding: 8px; border: 1px solid #333333;">Desglose de Artículos Consolidados</th>
+          <th style="padding: 8px; border: 1px solid #333333; text-align: right;">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tablaOriginal}
+      </tbody>
+    </table>
+
+    <div style="margin-top: 80px; display: flex; justify-content: space-between; padding: 0 40px;">
+      <div style="text-align: center; width: 220px;">
+        <div style="border-bottom: 1px solid #333333; height: 40px; margin-bottom: 5px;"></div>
+        <p style="margin: 0; font-size: 0.8rem; font-weight: bold; color: #222222;">Firma del Operador Activo</p>
+        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #666666;">${user.name || "Agustin Delgado"}</p>
+      </div>
+      <div style="text-align: center; width: 220px;">
+        <div style="border-bottom: 1px solid #333333; height: 40px; margin-bottom: 5px;"></div>
+        <p style="margin: 0; font-size: 0.8rem; font-weight: bold; color: #222222;">Control de Auditoría Externa</p>
+        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #666666;">Cátedra Metodología I - UTN</p>
+      </div>
+    </div>
+  `;
+
+  // Limpieza en caliente: reescribimos clases oscuras de Bootstrap en el DOM clonado para pasarlas a negro formal
+  const celdasTexto = contenedorInforme.querySelectorAll("td, span, td span");
+  celdasTexto.forEach((el) => {
+    el.style.setProperty("color", "#111111", "important");
+    el.style.setProperty("font-weight", "500", "important");
+  });
+
+  const subtotales = contenedorInforme.querySelectorAll(".text-success");
+  subtotales.forEach((el) => {
+    el.style.setProperty("color", "#1b5e20", "important");
+    el.style.setProperty("font-weight", "bold", "important");
+  });
+
+  const bordesFilas = contenedorInforme.querySelectorAll("tr");
+  bordesFilas.forEach((el) => {
+    el.style.borderBottom = "1px solid #dddddd";
+  });
+
+  // Configuramos parámetros de renderizado formal de html2pdf
+  const opciones = {
+    margin: 12,
+    filename: `Cierre_Caja_${fInicio}_al_${fFin}.pdf`,
+    image: { type: "jpeg", quality: 1.0 },
+    html2canvas: { scale: 3, backgroundColor: "#ffffff", useCORS: true }, // Forzamos lienzo blanco impecable
+    jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }, // Formato apaisado para lectura fluida
+  };
+
+  // Despachamos la descarga
+  html2pdf().set(opciones).from(contenedorInforme).save();
+}

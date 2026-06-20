@@ -69,3 +69,8 @@ select,
   font-size: 0.85rem !important;
   letter-spacing: 0.5px;
 }
+/* Forzar el icono del calendario (picker) a blanco puro */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(100%);
+  cursor: pointer;
+}
