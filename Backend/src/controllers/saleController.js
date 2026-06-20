@@ -56,19 +56,15 @@ export const createSale = async (req, res) => {
       return nuevaVenta;
     });
 
-    res
-      .status(201)
-      .json({
-        message: "Venta asentada y stock actualizado con éxito.",
-        sale: resultado,
-      });
+    res.status(201).json({
+      message: "Venta asentada y stock actualizado con éxito.",
+      sale: resultado,
+    });
   } catch (error) {
     console.error("❌ Error en transacción de venta:", error);
-    res
-      .status(500)
-      .json({
-        error: error.message || "Error al procesar la liquidación de venta.",
-      });
+    res.status(500).json({
+      error: error.message || "Error al procesar la liquidación de venta.",
+    });
   }
 };
 
@@ -116,5 +112,44 @@ export const getSalesHistory = async (req, res) => {
     res
       .status(500)
       .json({ error: "No se pudieron obtener los registros analíticos." });
+  }
+};
+// 3. CANCELAR / ELIMINAR UNA VENTA (DEVUELVE EL STOCK MEDIANTE TRANSACCIÓN ACID)
+export const deleteSale = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Ejecutamos en transacción centralizada
+    await prisma.$transaction(async (tx) => {
+      // A. Buscamos la venta con sus detalles para saber qué productos devolver
+      const venta = await tx.sale.findUnique({
+        where: { id: parseInt(id) },
+        include: { details: true },
+      });
+
+      if (!venta) throw new Error("La venta especificada no existe.");
+
+      // B. Devolvemos las cantidades al stock físico de cada producto
+      for (const detalle of venta.details) {
+        await tx.product.update({
+          where: { id: detalle.productId },
+          data: { stock: { increment: detalle.quantity } },
+        });
+      }
+
+      // C. Borramos la venta (Prisma se encarga de los detalles gracias al onDelete: Cascade del schema)
+      await tx.sale.delete({
+        where: { id: parseInt(id) },
+      });
+    });
+
+    res.json({
+      message: "Venta cancelada con éxito y stock restituido al maestro.",
+    });
+  } catch (error) {
+    console.error("❌ Error al cancelar venta:", error);
+    res
+      .status(500)
+      .json({ error: error.message || "Error al procesar la cancelación." });
   }
 };

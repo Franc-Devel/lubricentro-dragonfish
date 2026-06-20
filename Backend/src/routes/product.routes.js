@@ -5,7 +5,12 @@ import {
   createProduct,
   updateProduct,
 } from "../controllers/productController.js";
-import { createSale, getSalesHistory } from "../controllers/saleController.js"; // ◄ IMPORTAMOS LOS NUEVOS MÉTODOS
+// ◄ MODIFICAMOS ESTA LÍNEA agregando deleteSale al final:
+import {
+  createSale,
+  getSalesHistory,
+  deleteSale,
+} from "../controllers/saleController.js";
 
 const router = Router();
 
@@ -15,8 +20,9 @@ router.post("/productos", createProduct);
 router.put("/productos/:id", updateProduct);
 router.delete("/productos/:id", deleteProduct);
 
-// Rutas nuevas para el módulo de auditoría y cierre de caja diario
-router.post("/ventas", createSale); // ◄ POST para asentar la venta y restar stock
-router.get("/ventas/historial", getSalesHistory); // ◄ GET para consultar el historial filtrado
+// Rutas para el módulo de auditoría y cierre de caja diario
+router.post("/ventas", createSale);
+router.get("/ventas/historial", getSalesHistory);
+router.delete("/ventas/:id", deleteSale); // ◄ Ahora sí va a reconocer qué es deleteSale
 
 export default router;

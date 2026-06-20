@@ -93,8 +93,8 @@ function poblarSelectProductos(lista) {
       p.name.toUpperCase() +
       " (" +
       p.presentation +
-      ") - $" +
-      p.price +
+      ") - " +
+      formatearARS(p.price) +
       "</option>";
   });
 }
@@ -130,9 +130,22 @@ function alAgregar(e) {
 
   const p = dbProductos.find((x) => x.id === id);
   if (p) {
+    // Calculamos cuánto se pretende pedir en total consolidado (lo ya cargado + lo nuevo)
     const itemExistente = ticket.find((x) => x.code === p.code);
+    const cantidadTotalPretendida = itemExistente
+      ? itemExistente.cant + cant
+      : cant;
+
+    // CONTROL DE STOCK INMEDIATO (BLOQUEANTE)
+    if (cantidadTotalPretendida > p.stock) {
+      alert(
+        `⚠️ STOCK INSUFICIENTE para: ${p.name.toUpperCase()}\n• Disponibles en rack: ${p.stock} unidades.\n• Solicitadas en terminal: ${cantidadTotalPretendida} unidades.`,
+      );
+      return; // Detiene el flujo de inserción
+    }
+
     if (itemExistente) {
-      itemExistente.cant += cant;
+      itemExistente.cant = cantidadTotalPretendida;
       itemExistente.sub = itemExistente.price * itemExistente.cant;
     } else {
       ticket.push({
@@ -181,8 +194,8 @@ function renderTicket() {
       index +
       ', this.value)" style="height: 25px;" />' +
       "</td>" +
-      '<td class="text-end">$' +
-      i.sub.toFixed(2) +
+      '<td class="text-end">' +
+      formatearARS(i.sub) +
       "</td>" +
       '<td class="text-center">' +
       '<button type="button" class="p-0" onclick="quitarDelTicket(' +
@@ -192,7 +205,7 @@ function renderTicket() {
       "</tr>";
   });
 
-  document.getElementById("ticket-total").innerText = "$" + tot.toFixed(2);
+  document.getElementById("ticket-total").innerText = formatearARS(tot);
   document.getElementById("btn-finalizar").disabled = false;
 }
 
@@ -203,10 +216,9 @@ function actualizarCantidad(index, valor) {
   ticket[index].sub = ticket[index].price * nuevaCant;
   let nuevoTotal = 0;
   ticket.forEach((i) => (nuevoTotal += i.sub));
-  document.getElementById("ticket-total").innerText =
-    "$" + nuevoTotal.toFixed(2);
+  document.getElementById("ticket-total").innerText = formatearARS(nuevoTotal);
   const fila = document.getElementById("ticket-items").children[index];
-  fila.children[3].innerText = "$" + ticket[index].sub.toFixed(2);
+  fila.children[3].innerText = formatearARS(ticket[index].sub);
 }
 
 function quitarDelTicket(index) {
@@ -217,11 +229,10 @@ function quitarDelTicket(index) {
 function mostrarModalCobro() {
   let tot = 0;
   ticket.forEach((i) => (tot += i.sub));
-  document.getElementById("modal-total-monto").innerText = "$" + tot.toFixed(2);
+  document.getElementById("modal-total-monto").innerText = formatearARS(tot);
   new bootstrap.Modal(document.getElementById("modalCobro")).show();
 }
 
-// PERSISTENCIA DE VENTAS EN LA BASE DE DATOS REMOTA
 async function liquidarVentaServidor() {
   let totalVenta = 0;
   ticket.forEach((i) => (totalVenta += i.sub));
@@ -252,19 +263,46 @@ async function liquidarVentaServidor() {
       alert("✅ Operación completada. Venta guardada y stock descontado.");
       ticket = [];
       renderTicket();
-      inicializarVentas(); // Recarga catálogos locales para reflejar el stock actual decrecido
+      inicializarVentas();
     } else {
       alert("❌ Error: " + data.error);
     }
   } catch (err) {
     console.error(err);
-    alert("❌ Error crítico de comunicación con el servidor central.");
+    alert("❌ Error crítico de communication con el servidor central.");
+  }
+}
+async function cancelarVentaServidor(id) {
+  if (
+    !confirm(
+      "⚠️ ¿Estás seguro de que querés CANCELAR esta venta?\nSe eliminará el registro y los productos volverán al stock físico.",
+    )
+  )
+    return;
+
+  try {
+    const res = await fetch(`http://localhost:3000/api/ventas/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token"),
+      },
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("✅ Venta anulada correctamente. El stock fue reestablecido.");
+      consultarHistorial(); // Refresca la tabla e historial de KPIs
+      inicializarVentas(); // Refresca el selector y maestro de productos con su nuevo stock
+    } else {
+      alert("❌ Error: " + data.error);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error crítico de comunicación al intentar anular el remito.");
   }
 }
 
-// ==========================================================================
-// GESTIÓN DEL MAESTRO DE STOCK (ABM INTEGRAL)
-// ==========================================================================
 async function cargarProductosMaestro() {
   const query = document.getElementById("input-buscar-prod").value.trim();
   const url = query
@@ -284,6 +322,12 @@ async function cargarProductosMaestro() {
     }
 
     prods.forEach((p) => {
+      // VALIDACIÓN DE UMBRAL CRÍTICO (MENOR A 5 UNIDADES)
+      const esStockCritico = p.stock < 5;
+      const celdaStockHtml = esStockCritico
+        ? `<td class="text-center"><span class="badge bg-danger text-white fw-bold animate-pulse" style="font-size: 0.9rem; border: 1px solid #ff4d4d;">⚠️ CRÍTICO: ${p.stock}</span></td>`
+        : `<td class="text-center fw-bold text-white">${p.stock}</td>`;
+
       b.innerHTML +=
         "<tr>" +
         '<td><span class="text-info fw-bold">' +
@@ -295,12 +339,10 @@ async function cargarProductosMaestro() {
         "<td>" +
         p.presentation +
         "</td>" +
-        '<td class="text-end">$' +
-        p.price.toFixed(2) +
+        '<td class="text-end">' +
+        formatearARS(p.price) +
         "</td>" +
-        '<td class="text-center fw-bold">' +
-        p.stock +
-        "</td>" +
+        celdaStockHtml +
         '<td class="text-center">' +
         '<button type="button" class="me-2" onclick="prepararEdicion(' +
         p.id +
@@ -386,7 +428,7 @@ async function guardarProductoBD(e) {
       bootstrap.Modal.getInstance(
         document.getElementById("modalProducto"),
       ).hide();
-      alert("✅ Catálogo modificado con éxito.");
+      alert("✅ Catálogo modified con éxito.");
       inicializarVentas();
     }
   } catch (err) {
@@ -411,7 +453,7 @@ async function eliminarProductoBD(id, code) {
 }
 
 // ==========================================================================
-// MÓDULO ANALÍTICO: HISTORIAL Y REPORTES DE CIERRE DE CAJA (NUEVO)
+// MÓDULO ANALÍTICO: HISTORIAL Y REPORTES DE CIERRE DE CAJA
 // ==========================================================================
 function inicializarHistorial() {
   const hoy = new Date().toISOString().split("T")[0];
@@ -457,7 +499,7 @@ function renderHistorialTabla(ventas) {
 
   if (ventas.length === 0) {
     body.innerHTML =
-      '<tr><td colspan="5" class="text-center text-muted py-3">No se registran ventas para el período seleccionado.</td></tr>';
+      '<tr><td colspan="6" class="text-center text-muted py-3">No se registran ventas para el período seleccionado.</td></tr>';
     actualizarKpis(0, 0, 0, 0);
     return;
   }
@@ -481,7 +523,10 @@ function renderHistorialTabla(ventas) {
         <td><span class="badge bg-black text-info border border-secondary fw-bold px-2 py-1">${v.operator}</span></td>
         <td><span class="text-info fw-bold">${v.payment}</span></td>
         <td class="text-white fw-semibold">${desgloseItems}</td>
-        <td class="text-end text-success fw-bold fs-5" style="text-shadow: 0 0 10px rgba(40, 167, 69, 0.2);">$${v.total.toFixed(2)}</td>
+        <td class="text-end text-success fw-bold fs-5" style="text-shadow: 0 0 10px rgba(40, 167, 69, 0.2);">${formatearARS(v.total)}</td>
+        <td class="text-center">
+          <button type="button" onclick="cancelarVentaServidor(${v.id})" style="background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 1.1rem;" title="Cancelar Venta">🗑️</button>
+        </td>
       </tr>
     `;
   });
@@ -490,11 +535,10 @@ function renderHistorialTabla(ventas) {
 }
 
 function actualizarKpis(general, efe, tar, tra) {
-  document.getElementById("kpi-total-ventas").innerText =
-    `$${general.toFixed(2)}`;
-  document.getElementById("kpi-efectivo").innerText = `$${efe.toFixed(2)}`;
-  document.getElementById("kpi-tarjeta").innerText = `$${tar.toFixed(2)}`;
-  document.getElementById("kpi-transferencia").innerText = `$${tra.toFixed(2)}`;
+  document.getElementById("kpi-total-ventas").innerText = formatearARS(general);
+  document.getElementById("kpi-efectivo").innerText = formatearARS(efe);
+  document.getElementById("kpi-tarjeta").innerText = formatearARS(tar);
+  document.getElementById("kpi-transferencia").innerText = formatearARS(tra);
 }
 
 // Genera un balance contable y profesional de cierre de caja en PDF para impresión foliar
@@ -503,19 +547,16 @@ function descargarReportePDF() {
   const fFin = document.getElementById("hist-fecha-fin").value;
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Capturamos los montos actuales calculados en las KPI cards reales de la pantalla
   const txtTotal = document.getElementById("kpi-total-ventas").innerText;
   const txtEfectivo = document.getElementById("kpi-efectivo").innerText;
   const txtTarjeta = document.getElementById("kpi-tarjeta").innerText;
   const txtTransferencia =
     document.getElementById("kpi-transferencia").innerText;
 
-  // Capturamos las filas de datos del historial
   const tablaOriginal = document.getElementById(
     "tabla-historial-body",
   ).innerHTML;
 
-  // Creamos un contenedor aislado en memoria y le inyectamos estructura corporativa limpia (Fondo Blanco)
   const contenedorInforme = document.createElement("div");
   contenedorInforme.style.padding = "20px";
   contenedorInforme.style.backgroundColor = "#ffffff";
@@ -576,43 +617,58 @@ function descargarReportePDF() {
       <div style="text-align: center; width: 220px;">
         <div style="border-bottom: 1px solid #333333; height: 40px; margin-bottom: 5px;"></div>
         <p style="margin: 0; font-size: 0.8rem; font-weight: bold; color: #222222;">Firma del Operador Activo</p>
-        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #666666;">${user.name || "Agustin Delgado"}</p>
-      </div>
-      <div style="text-align: center; width: 220px;">
-        <div style="border-bottom: 1px solid #333333; height: 40px; margin-bottom: 5px;"></div>
-        <p style="margin: 0; font-size: 0.8rem; font-weight: bold; color: #222222;">Control de Auditoría Externa</p>
-        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #666666;">Cátedra Metodología I - UTN</p>
+        <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #666666;">${user.name || "Oriana Gordillo"}</p>
       </div>
     </div>
   `;
 
-  // Limpieza en caliente: reescribimos clases oscuras de Bootstrap en el DOM clonado para pasarlas a negro formal
+  // Limpieza integral de textos oscuros sobre blanco (Para anular el text-white de Bootstrap)
   const celdasTexto = contenedorInforme.querySelectorAll("td, span, td span");
   celdasTexto.forEach((el) => {
     el.style.setProperty("color", "#111111", "important");
     el.style.setProperty("font-weight", "500", "important");
   });
 
-  const subtotales = contenedorInforme.querySelectorAll(".text-success");
+  // Limpieza integral de los subtotales para pasarlos a verde oscuro corporativo (Hereda el formato ARS)
+  const subtotales = contenedorInforme.querySelectorAll(".text-end");
   subtotales.forEach((el) => {
     el.style.setProperty("color", "#1b5e20", "important");
     el.style.setProperty("font-weight", "bold", "important");
   });
 
+  // Limpieza específica de los Badges de Operador (Fondo Gris Claro y Texto Negro)
+  const badgesOperador = contenedorInforme.querySelectorAll(".badge");
+  badgesOperador.forEach((badge) => {
+    badge.style.setProperty("background-color", "#f0f0f4", "important");
+    badge.style.setProperty("color", "#111111", "important");
+    badge.style.setProperty("border", "1px solid #cccccc", "important");
+    badge.style.setProperty("font-weight", "bold", "important");
+  });
+
+  // Línea divisoria formal gris para separar cada transacción
   const bordesFilas = contenedorInforme.querySelectorAll("tr");
   bordesFilas.forEach((el) => {
     el.style.borderBottom = "1px solid #dddddd";
   });
 
-  // Configuramos parámetros de renderizado formal de html2pdf
+  // Parámetros de renderizado formal de html2pdf
   const opciones = {
     margin: 12,
     filename: `Cierre_Caja_${fInicio}_al_${fFin}.pdf`,
     image: { type: "jpeg", quality: 1.0 },
-    html2canvas: { scale: 3, backgroundColor: "#ffffff", useCORS: true }, // Forzamos lienzo blanco impecable
-    jsPDF: { unit: "mm", format: "a4", orientation: "landscape" }, // Formato apaisado para lectura fluida
+    html2canvas: { scale: 3, backgroundColor: "#ffffff", useCORS: true },
+    jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
   };
 
   // Despachamos la descarga
   html2pdf().set(opciones).from(contenedorInforme).save();
+}
+
+// Función búnker para formatear a Pesos Argentinos (ej: ARS $ 1.250.500,00)
+function formatearARS(monto) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+  }).format(monto);
 }
