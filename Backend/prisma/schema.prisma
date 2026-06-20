@@ -18,21 +18,22 @@ model User {
 }
 
 model Category {
-  id        Int       @id @default(autoincrement())
-  name      String
-  slug      String    @unique
-  products  Product[]
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  products Product[]
 }
 
 model Product {
-  id           Int      @id @default(autoincrement())
-  code         String   @unique
+  id           Int          @id @default(autoincrement())
+  code         String       @unique
   name         String
   presentation String
   price        Float
-  stock        Int      @default(0)
+  stock        Int          @default(0)
   categoryId   Int
-  category     Category @relation(fields: [categoryId], references: [id])
+  category     Category     @relation(fields: [categoryId], references: [id])
+  salesDetails SaleDetail[] // ◄ Relación inversa agregada para solucionar el error P1012
 }
 
 model Appointment {
@@ -41,4 +42,23 @@ model Appointment {
   vehiclePlate String?
   date         DateTime
   status       String   @default("PENDIENTE")
+}
+
+model Sale {
+  id        Int          @id @default(autoincrement())
+  total     Float
+  operator  String       // Nombre del operador que la realizó
+  payment   String       // ◄ Agregado para el desglose del arqueo de caja (EFECTIVO, TARJETA, TRANSFERENCIA)
+  createdAt DateTime     @default(now())
+  details   SaleDetail[]
+}
+
+model SaleDetail {
+  id        Int     @id @default(autoincrement())
+  saleId    Int
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float   // Guardamos el precio histórico al que se vendió
 }

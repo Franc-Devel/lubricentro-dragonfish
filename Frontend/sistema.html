@@ -45,10 +45,22 @@
           >
             Stock & Catálogo
           </button>
+          <button
+            class="nav-link text-start small fw-bold"
+            id="tab-historial"
+            data-bs-toggle="pill"
+            data-bs-target="#panel-historial"
+            onclick="inicializarHistorial()"
+          >
+            Historial Ventas
+          </button>
         </div>
       </div>
 
-      <div class="tab-content p-3 flex-grow-1">
+      <div
+        class="tab-content p-3 flex-grow-1"
+        style="height: calc(100vh - 35px); overflow-y: auto"
+      >
         <div class="tab-pane fade show active" id="panel-ventas">
           <h5 class="text-info fw-bold mb-3">NUEVA OPERACIÓN DE VENTA</h5>
           <div class="row g-3">
@@ -178,16 +190,118 @@
             </table>
           </div>
         </div>
+
+        <div class="tab-pane fade" id="panel-historial">
+          <h5 class="text-info fw-bold mb-3">
+            AUDITORÍA E HISTORIAL DE VENTAS
+          </h5>
+
+          <div class="card bg-secondary p-3 border-0 mb-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3">
+                <label class="small text-muted fw-bold">FECHA INICIO</label>
+                <input
+                  type="date"
+                  id="hist-fecha-inicio"
+                  class="form-control bg-dark text-white border-0 form-control-sm"
+                />
+              </div>
+              <div class="col-md-3">
+                <label class="small text-muted fw-bold">FECHA FIN</label>
+                <input
+                  type="date"
+                  id="hist-fecha-fin"
+                  class="form-control bg-dark text-white border-0 form-control-sm"
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="small text-muted fw-bold"
+                  >FILTRAR POR PRODUCTO</label
+                >
+                <select
+                  id="hist-producto-select"
+                  class="form-select bg-dark text-white border-0 form-control-sm text-uppercase"
+                ></select>
+              </div>
+              <div class="col-md-2">
+                <button
+                  class="btn btn-info btn-sm w-100 text-dark fw-bold"
+                  onclick="consultarHistorial()"
+                >
+                  FILTRAR
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <div
+                class="card bg-secondary p-2 border-start border-4 border-info border-0 text-center"
+              >
+                <span class="small text-muted fw-bold text-uppercase"
+                  >Cierre Total</span
+                >
+                <h4 class="text-info fw-bold m-0" id="kpi-total-ventas">
+                  $0.00
+                </h4>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div
+                class="card bg-secondary p-2 border-start border-4 border-success border-0 text-center"
+              >
+                <span class="small text-muted fw-bold text-uppercase"
+                  >💵 Efectivo</span
+                >
+                <h4 class="text-success fw-bold m-0" id="kpi-efectivo">
+                  $0.00
+                </h4>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div
+                class="card bg-secondary p-2 border-start border-4 border-warning border-0 text-center"
+              >
+                <span class="small text-muted fw-bold text-uppercase"
+                  >💳 Tarjetas</span
+                >
+                <h4 class="text-warning fw-bold m-0" id="kpi-tarjeta">$0.00</h4>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div
+                class="card bg-secondary p-2 border-start border-4 border-primary border-0 text-center"
+              >
+                <span class="small text-muted fw-bold text-uppercase"
+                  >📱 Transf.</span
+                >
+                <h4 class="text-primary fw-bold m-0" id="kpi-transferencia">
+                  $0.00
+                </h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="card bg-secondary p-3 border-0">
+            <table class="table table-dark table-striped small">
+              <thead>
+                <tr>
+                  <th>Fecha / Hora</th>
+                  <th>Operador</th>
+                  <th>Medio de Pago</th>
+                  <th>Desglose de Artículos Consolidados</th>
+                  <th class="text-end">Monto Total</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-historial-body"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div
-      class="modal fade"
-      id="modalCobro"
-      tabindex="-1"
-      aria-labelledby="modalCobroLabel"
-      aria-hidden="true"
-    >
+    <div class="modal fade" id="modalCobro" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div
           class="modal-content bg-secondary text-white border border-secondary"
@@ -195,7 +309,7 @@
           <div
             class="modal-header border-bottom border-dark bg-black py-2 px-3"
           >
-            <h6 class="modal-title fw-bold text-info" id="modalCobroLabel">
+            <h6 class="modal-title fw-bold text-info">
               📥 RESUMEN DE COBRO DE CAJA
             </h6>
             <button
@@ -205,19 +319,32 @@
               aria-label="Close"
             ></button>
           </div>
-          <div class="modal-body text-center py-4">
+          <div class="modal-body text-center py-3">
             <p class="text-muted small text-uppercase fw-bold mb-1">
               Monto Neto a Liquidar
             </p>
             <h1
-              class="display-5 fw-bold text-success mb-2"
+              class="display-5 fw-bold text-success mb-3"
               id="modal-total-monto"
             >
               $0.00
             </h1>
-            <p class="small text-white-50 m-0">
-              Asegure el cobro en efectivo o posnet antes de confirmar.
-            </p>
+
+            <div class="text-start mx-auto" style="max-width: 280px">
+              <label class="small text-muted fw-bold mb-1"
+                >CANAL DE INGRESO (ARQUEO)</label
+              >
+              <select
+                id="modal-metodo-pago"
+                class="form-select bg-dark text-white border-0 form-control-sm fw-bold"
+              >
+                <option value="EFECTIVO">💵 EFECTIVO EN CAJA</option>
+                <option value="TARJETA">💳 DÉBITO / CRÉDITO (POSNET)</option>
+                <option value="TRANSFERENCIA">
+                  📱 TRANSFERENCIA (MP / ALIAS)
+                </option>
+              </select>
+            </div>
           </div>
           <div
             class="modal-footer border-top border-dark bg-black py-2 px-3 d-flex justify-content-between"
@@ -241,13 +368,7 @@
       </div>
     </div>
 
-    <div
-      class="modal fade"
-      id="modalProducto"
-      tabindex="-1"
-      aria-labelledby="modalProductoTitle"
-      aria-hidden="true"
-    >
+    <div class="modal fade" id="modalProducto" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div
           class="modal-content bg-secondary text-white border border-secondary"
@@ -275,7 +396,6 @@
                     type="text"
                     id="prod-codigo"
                     class="form-control bg-dark text-white border-0 form-control-sm text-center text-info fw-bold"
-                    placeholder="Ej: 021"
                     required
                   />
                 </div>
@@ -299,7 +419,6 @@
                     type="text"
                     id="prod-nombre"
                     class="form-control bg-dark text-white border-0 form-control-sm text-uppercase"
-                    placeholder="ACEITE BARDAHL..."
                     required
                   />
                 </div>
@@ -309,7 +428,6 @@
                     type="text"
                     id="prod-presentacion"
                     class="form-control bg-dark text-white border-0 form-control-sm"
-                    placeholder="Bidon 4L / Unidad"
                     required
                   />
                 </div>
@@ -320,7 +438,6 @@
                     id="prod-precio"
                     step="0.01"
                     class="form-control bg-dark text-white border-0 form-control-sm text-end"
-                    placeholder="0.00"
                     required
                   />
                 </div>
@@ -330,7 +447,6 @@
                     type="number"
                     id="prod-stock"
                     class="form-control bg-dark text-white border-0 form-control-sm text-center fw-bold"
-                    placeholder="0"
                     required
                   />
                 </div>
