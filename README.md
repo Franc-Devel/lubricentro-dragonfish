@@ -1,13 +1,22 @@
-# Lubricentro Central · Propuesta Dragonfish
+# Lubricentro Central · Prototipo Dragonfish
 
-La documentación original plantea un sistema de gestión con Express, Prisma y MySQL. La rama principal contiene únicamente este README; no incluye backend, frontend ni esquema de base de datos. Las tecnologías corresponden a la propuesta, no a una implementación verificable.
+Proyecto de aprendizaje de gestión operativa con Node.js, Express, Prisma y frontend HTML, CSS y JavaScript.
 
-## Estado del repositorio
+## Dónde está el código
 
-Repositorio documental de aprendizaje. No se ofrece una demo ejecutable ni se afirma que las funcionalidades estén implementadas en esta rama.
+La rama principal contiene documentación. Las implementaciones están en:
 
-## Próximo paso
+- [developer](https://github.com/Franc-Devel/lubricentro-dragonfish/tree/developer): backend y frontend del prototipo.
+- [dev-ventas](https://github.com/Franc-Devel/lubricentro-dragonfish/tree/dev-ventas): variante que incorpora un controlador de ventas.
 
-Confirmar dónde se conserva el código y sus derechos de uso antes de incorporarlo. Cuando esté disponible, documentar instalación, datos de demostración y validación de las funcionalidades reales.
+## Estado y uso
+
+El código disponible debe revisarse antes de ejecutar servicios o conectar una base de datos. No se certifica como ERP, sistema de facturación fiscal ni producto listo para producción.
+
+La documentación anterior menciona una base en la nube. Usar una base local aislada y configuración propia de prueba; no reutilizar credenciales ni datos reales. Las instrucciones de instalación deberán corresponder a la rama seleccionada.
+
+## Continuidad
+
+Se conservan las ramas y la arquitectura. Integrar una variante a main o cambiar configuración de despliegue requiere una decisión específica.
 
 [Perfil de Francisco Delgado](https://github.com/Franc-Devel)
