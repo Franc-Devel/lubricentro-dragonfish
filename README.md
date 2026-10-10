@@ -1,26 +1,13 @@
-# Lubricentro Central | Módulo Dragonfish v1.0
+# Lubricentro Central · Propuesta Dragonfish
 
-Sistema compacto de gestión operativa y facturación de mostrador estilo ERP búnker, optimizado para flujos rápidos de trabajo mediante comandos de teclado y terminal interactiva.
+La documentación original plantea un sistema de gestión con Express, Prisma y MySQL. La rama principal contiene únicamente este README; no incluye backend, frontend ni esquema de base de datos. Las tecnologías corresponden a la propuesta, no a una implementación verificable.
 
-## 🛠️ Arquitectura del Sistema
+## Estado del repositorio
 
-- **Backend:** Node.js (ES Modules) + Express v4
-- **Persistencia & ORM:** Prisma ORM v5 conectado a MySQL 8.4 (Instancia en la nube Aiven)
-- **Frontend:** Interfaz unificada monocromática optimizada (Modo Búnker) construida en Vanilla HTML5, CSS Custom Properties y JavaScript Asincrónico (Fetch API).
+Repositorio documental de aprendizaje. No se ofrece una demo ejecutable ni se afirma que las funcionalidades estén implementadas en esta rama.
 
-## 🗃️ Modelo de Datos Primario
+## Próximo paso
 
-El esquema relacional cuenta con indexación única de artículos para búsquedas elásticas multicriterio de tres dígitos (`001` al `020` correlativos):
+Confirmar dónde se conserva el código y sus derechos de uso antes de incorporarlo. Cuando esté disponible, documentar instalación, datos de demostración y validación de las funcionalidades reales.
 
-- `User`: Control de operadores y roles de terminal.
-- `Category`: Segmentación del maestro de artículos.
-- `Product`: Catálogo de existencias indexado por código único (`code`).
-- `Appointment`: Planificación del monitor de turnos del taller.
-
-## 🚀 Despliegue Local del Entorno
-
-1. Instalar dependencias en el núcleo del servidor:
-   ```bash
-   cd Backend
-   npm install
-   ```
+[Perfil de Francisco Delgado](https://github.com/Franc-Devel)
